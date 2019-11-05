@@ -12,7 +12,7 @@ def start():
     # check to make sure you set the device
     # cuda_id = 0
     # torch.cuda.set_device(cuda_id)
-    # new edit test5
+    # new edit test7
     version = '29_6'
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
