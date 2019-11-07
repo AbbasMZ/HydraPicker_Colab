@@ -1,0 +1,32 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "SSPicker29_6_local",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["-m", "evaluate", "-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+        },
+        {
+            "name": "Predict",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+        },
+        {
+            "name": "Evaluate",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["-m", "both", "-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+        }
+    ]
+}

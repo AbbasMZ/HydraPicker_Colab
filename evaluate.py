@@ -23,16 +23,16 @@ def start():
     version = '29_6'
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
+    parser.add_argument('-m', '--mode', default='score', type=str, choices=['score', 'image', 'both'], dest='mode')
     parser.add_argument('-t', '--training_type', required=True, type=str,
                         choices=['2b', '3b', '4b', '5b', '3c', '4c', '5c'], dest='training_type')
     parser.add_argument('-g', '--gen_multiplier', type=float, default=0, dest='gen_multiplier')
-    parser.add_argument('-s', '--save', type=str, default='0', dest='save')
     parser.add_argument('-l', '--load', type=str, default=None, dest='load')
     parser.add_argument('-lv', '--load_version', type=str, default=version, dest='load_version')
-    parser.add_argument('-bs', '--batch_size', type=int, default=4, dest='bs')
-    parser.add_argument('-sd', '--source_datasets',
-                        default='10077$10078$10081$pdb_6bqv$ss_1$pdb_6bhu$pdb_6bcx$pdb_6bcq$pdb_6bco$pdb_6az1$pdb_5y6p$pdb_5xwy$pdb_5w3s$pdb_5ngm$pdb_5mmi$pdb_5foj$pdb_4zor$pdb_3j9i$pdb_2gtl$pdb_1sa0$lf_1$hh_2$gk_1$10156$10153$10122$10097$10089$10084$10017',
-                        type=str, dest='source_dataset')
+    parser.add_argument('-bs', '--batch_size', type=int, default=1, dest='bs')
+    # parser.add_argument('-sd', '--source_datasets',
+    #                     default='10077$10078$10081$pdb_6bqv$ss_1$pdb_6bhu$pdb_6bcx$pdb_6bcq$pdb_6bco$pdb_6az1$pdb_5y6p$pdb_5xwy$pdb_5w3s$pdb_5ngm$pdb_5mmi$pdb_5foj$pdb_4zor$pdb_3j9i$pdb_2gtl$pdb_1sa0$lf_1$hh_2$gk_1$10156$10153$10122$10097$10089$10084$10017',
+    #                     type=str, dest='source_dataset')
     parser.add_argument('-td', '--target_datasets',
                         default='pdb_6b7n$pdb_6b44$pdb_5xnl$pdb_5w3l$pdb_5vy5$pdb_4hhb$pdb_2wri', type=str,
                         dest='target_dataset')
@@ -45,39 +45,29 @@ def start():
     parser.add_argument('-ph', '--prediction_head', type=str, default='gen', dest='prediction_head')
     parser.add_argument('-psf', '--prediction_subfolder', type=str, default=None, dest='prediction_subfolder')
     parser.add_argument('-pc', '--prediction_conf', type=float, default=0, dest='prediction_conf')
-    parser.add_argument('-ef', '--evaluate_format', type=str, choices=['star', 'star_cryolo'],
+    parser.add_argument('-ef', '--evaluate_format', type=str, choices=['star', 'star_cryolo', 'star_boxnet'],
                         default='star', dest='evaluate_format')
-    parser.add_argument('-dr', '--draw', type=int, choices=[0, 1], default=0, dest='draw')
     parser.add_argument('-cm', '--cryolo_model', type=str, default='phosnet', dest='cryolo_model')
     parser.add_argument('-bns', '--boxnet_suffix', type=str, default='_BoxNet_blank_trn5.star', dest='boxnet_suffix')
     args = parser.parse_args()
 
     ############ Mainly used variables
+    mode = args.mode
+    if mode == 'image' or mode == 'both':
+        draw = 1
+    else:
+        draw = 0
     training_type = args.training_type
-
-    gen_multiplier = args.gen_multiplier
-
-    save = args.save
-
     load = args.load
-
     load_version = args.load_version
-
     source_image = args.source_image
-
     source_list = args.source_list
-
     bs = args.bs
-
-    source_datasets = args.source_dataset.split('$')
-
+    # source_datasets = args.source_dataset.split('$')
     target_datasets = args.target_dataset.split('$')
-
     iou_tst = args.iou_tst
-
     f_model = myresnet
     sz = args.crop_size
-
     if args.particle_size == 0:
         # par_sz_pix = particle_size_dict_0[target_dataset]
         par_sz_pix = 20
@@ -86,9 +76,7 @@ def start():
         par_sz_pix = 21
     else:
         par_sz_pix = args.particle_size
-
     par_sz = par_sz_pix / sz
-
     # dist_threshold = par_sz * 0.2
     # pick_threshold = np.linspace(1e-6, 1 - 1e-6, 41)
     heads_dict = {"10077": 0, "10078": 1, "10081": 2, "pdb_6bqv": 3, "ss_1": 4,
@@ -100,21 +88,12 @@ def start():
                   "10097": 26, "10089": 27, "10084": 28, "10017": 29,
                   "pdb_6b7n": 30, "pdb_6b44": 31, "pdb_5xnl": 32, "pdb_5w3l": 33,
                   "pdb_5vy5": 34, "pdb_4hhb": 35, "pdb_2wri": 36, "gen": 37, "fine_tuned": 38}
-
     prediction_head = args.prediction_head
-    
     prediction_subfolder = args.prediction_subfolder
-
     prediction_conf = args.prediction_conf
-
     evaluate_format = args.evaluate_format
-
     cryolo_model = args.cryolo_model
-
     boxnet_suffix = args.boxnet_suffix
-
-    draw = args.draw
-
     # TP = np.zeros(len(pick_threshold), dtype=np.uint32)
     # total_pick = np.zeros(len(pick_threshold), dtype=np.uint32)
     total_reference = 0
@@ -126,7 +105,6 @@ def start():
     fpr = None
     auroc = None
     rec3 = None
-
     # total_avg_distance = np.zeros(len(pick_threshold), dtype=np.float32)
     # class_avg_distance = np.zeros(num_ds + 1)
     # total_count = np.zeros(len(pick_threshold), dtype=np.uint32)
@@ -666,20 +644,48 @@ def start():
             prec_at_rec90[1] = prec_at_rec90_temp
 
         return auc, prec_at_rec90[1], rec_at_prec90  # , avgdis_auc  # , avgdis_at_rec10
+    
+    def add_border(x, y):
+        sizes = torch.tensor(x.shape[2:])
+        rmdr = torch.fmod(16 - torch.fmod(sizes, 16), 16)
+        if torch.sum(rmdr) > 0:
 
+            left = rmdr[0] / 2
+            # right = ((rmdr[0]) + 1) / 2
+            up = rmdr[1] / 2
+            # down = ((rmdr[1]) + 1) / 2
+
+            sizes_padded = sizes + rmdr
+            x_padded = torch.zeros((1, 1, sizes_padded[0], sizes_padded[1]))
+            x_padded[0, 0, left:left + sizes[0], up:up + sizes[1]] = x[0][0]
+            # x_padded = torch.unsqueeze(x_padded, 0)
+            # x_padded = torch.unsqueeze(x_padded, 0)
+
+            if y:
+                left = left.cuda()
+                up = up.cuda()
+                for i in range(len(y[0][0])):
+                    if np.mod(i, 2) == 0:
+                        y[0][0][i] += left
+                    else:
+                        y[0][0][i] += up
+
+            return x_padded, y
+        return x, y
+        
     ######## Augmentations
     tfms0 = tfms_from_model(f_model, sz, crop_type=CropType.IDENTITY, tfm_y=TfmType.COORD_CENTERS, pad_mode=cv2.BORDER_REFLECT_101)
 
-    source_uri_list_tst = []
-    source_centroids_list_tst = []
-    source_tst_idxs = ()
-    source_tst_idxs_index = 0
-    for c1 in source_datasets:
-        source_uri_list_tst.extend(uri_list_tst_dict[c1])
-        source_centroids_list_tst.extend(centroids_list_tst_dict[c1])
-        source_tst_idxs = source_tst_idxs + tuple(
-            range(source_tst_idxs_index, source_tst_idxs_index + lens_dict_tst[c1]))
-        source_tst_idxs_index += len(uri_list_tst_dict[c1])
+    # source_uri_list_tst = []
+    # source_centroids_list_tst = []
+    # source_tst_idxs = ()
+    # source_tst_idxs_index = 0
+    # for c1 in source_datasets:
+    #     source_uri_list_tst.extend(uri_list_tst_dict[c1])
+    #     source_centroids_list_tst.extend(centroids_list_tst_dict[c1])
+    #     source_tst_idxs = source_tst_idxs + tuple(
+    #         range(source_tst_idxs_index, source_tst_idxs_index + lens_dict_tst[c1]))
+    #     source_tst_idxs_index += len(uri_list_tst_dict[c1])
 
     target_uri_list_tst = []
     target_centroids_list_tst = []
@@ -787,7 +793,7 @@ def start():
                 else:
                     calc_metrics2(pred0, y0, x0=x0, md=md_target_datasets_shared_tst0, five_crop=False,
                                 sizes=x0.shape[2:], tpcenters=True, md_name='_Gen head on targets')
-            elif evaluate_format == "star":
+            elif evaluate_format == "star_boxnet":
                 learn.set_data(md_target_datasets_shared_tst0)
                 x0, y0 = next(iter0)
                 x0 = V(x0)
@@ -824,6 +830,41 @@ def start():
                 else:
                     calc_metrics2(pred0, y0, x0=x0, md=md_target_datasets_shared_tst0, five_crop=False,
                                 sizes=x0.shape[2:], tpcenters=True, md_name='_Gen head on targets')
+            elif evaluate_format == "star":
+                learn.set_data(md_target_datasets_shared_tst0)
+                x0, y0 = next(iter0)
+                x0, y0 = add_border(x0, y0)
+                x0 = V(x0)
+                y0[0] = y0[0].float()
+                y0 = V(y0)
+
+                with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "r") as text_file:
+                    for i in range(7):
+                        input_line = text_file.readline()
+                    predicted_centroids = []
+                    predicted_confs = []
+                    while input_line != '' and input_line != '\n':
+                        # predicted_centroids[0, :] = input_line.split(' ')[2], input_line.split(' ')[4]
+                        line_content = []
+                        for i in input_line.split('\n')[0].split('\t'):
+                            if i != '':
+                                line_content.append(i)
+                        predicted_centroids.append([float(line_content[0]), float(line_content[1])])
+                        predicted_confs.append(float(line_content[2]))
+                        input_line = text_file.readline()
+                    predicted_centroids = np.array(predicted_centroids, dtype=np.float32).reshape(1, -1, 2)
+                    predicted_centroids[0, :, 0] = predicted_centroids[0, :, 0] / x0.shape[3]
+                    predicted_centroids[0, :, 1] = predicted_centroids[0, :, 1] / x0.shape[2]
+                    # predicted_centroids[0, :, [0, 1]] = predicted_centroids[0, :, [1, 0]]
+                    predicted_centroids = T(predicted_centroids)
+                    predicted_confs = np.array(predicted_confs, dtype=np.float32).reshape(1, -1)
+
+                    pred0 = [predicted_confs, predicted_centroids]
+                if not draw:
+                    calc_metrics2(pred0, y0, five_crop=False, sizes=x0.shape[2:])
+                else:
+                    calc_metrics2(pred0, y0, x0=x0, md=md_target_datasets_shared_tst0, five_crop=False,
+                                sizes=x0.shape[2:], tpcenters=True, md_name='_Gen head on targets')
             else:
                 print("Error: Evaluation input file format not implemented!")
                 exit(1)
@@ -834,37 +875,7 @@ def start():
 
     rec2 = recall()
     prec2 = precision()
-    auroc2, fpr2, rec3 = receiver_operating_characteristic()
-
-    if save != '0':
-        if training_type != '4b' and training_type != '5b' and training_type != '4c' and training_type != '5c':
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_rec2.pickle',
-                        'wb') as handle:
-                pickle.dump(rec2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_prec2.pickle',
-                        'wb') as handle:
-                pickle.dump(prec2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_fpr2.pickle',
-                        'wb') as handle:
-                pickle.dump(fpr2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_rec3.pickle',
-                        'wb') as handle:
-                pickle.dump(rec3, handle)
-
-        else:
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_rec2.pickle', 'wb') as handle:
-                pickle.dump(rec2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_prec2.pickle', 'wb') as handle:
-                pickle.dump(prec2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_fpr2.pickle', 'wb') as handle:
-                pickle.dump(fpr2, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_rec3.pickle', 'wb') as handle:
-                pickle.dump(rec3, handle)
-                
+    auroc2, fpr2, rec3 = receiver_operating_characteristic()                
     auc, prec_at_rec90, rec_at_prec90 = calc_auc(rec2, prec2)
 
     print("Gen head on targets:")
@@ -873,36 +884,6 @@ def start():
     print("Recall at precision=90:      ", rec_at_prec90)
     print("AUROC:                       ", auroc2)
     print("\n")
-
-    if save != '0':
-        if training_type != '4b' and training_type != '5b' and training_type != '4c' and training_type != '5c':
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_auc.pickle',
-                        'wb') as handle:
-                pickle.dump(auc, handle)
-            with open(
-                    path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_prec_at_rec90.pickle',
-                    'wb') as handle:
-                pickle.dump(prec_at_rec90, handle)
-            with open(
-                    path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_rec_at_prec90.pickle',
-                    'wb') as handle:
-                pickle.dump(rec_at_prec90, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_target_gen_auroc.pickle',
-                        'wb') as handle:
-                pickle.dump(auroc2, handle)
-        else:
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_auc.pickle', 'wb') as handle:
-                pickle.dump(auc, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_prec_at_rec90.pickle', 'wb') as handle:
-                pickle.dump(prec_at_rec90, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_rec_at_prec90.pickle', 'wb') as handle:
-                pickle.dump(rec_at_prec90, handle)
-            with open(path4 + 'SSPicker_' + version + '_' + training_type + '_' + str(
-                    gen_multiplier) + '_target_gen_auroc.pickle', 'wb') as handle:
-                pickle.dump(auroc2, handle)
 
 def main(argv=None):
     start()
