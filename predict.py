@@ -12,14 +12,9 @@ def start():
     # check to make sure you set the device
     # cuda_id = 0
     # torch.cuda.set_device(cuda_id)
-    # new edit test7
-    version = '29_6'
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
-    parser.add_argument('-t', '--training_type', required=True, type=str,
-                        choices=['2b', '3b', '4b', '5b', '3c', '4c', '5c'], dest='training_type')
     parser.add_argument('-l', '--load', type=str, required=True, default=None, dest='load')
-    parser.add_argument('-lv', '--load_version', type=str, default=version, dest='load_version')
     parser.add_argument('-bs', '--batch_size', type=int, default=4, dest='bs')
     parser.add_argument('-td', '--target_datasets',
                         default='pdb_6b7n$pdb_6b44$pdb_5xnl$pdb_5w3l$pdb_5vy5$pdb_4hhb$pdb_2wri', type=str,
@@ -35,9 +30,7 @@ def start():
 
 
     ############ Mainly used variables
-    training_type = args.training_type
     load = args.load
-    load_version = args.load_version
     source_image = args.source_image
     source_list = args.source_list
     bs = args.bs
@@ -107,6 +100,25 @@ def start():
         print("Error reading splits file!")
         exit(1)
 
+    def numlist(count, number): return [number] * count
+
+    num_list_tst = []
+    for c1 in target_datasets:
+            num_list_tst += numlist(lens_dict_tst[c1], heads_dict[c1])
+
+    class ConcatLblDataset_tst(Dataset):
+        def __init__(self, ds):
+            self.ds = ds
+            self.sz = ds.sz
+
+        def __len__(self): return len(self.ds)
+
+        def __getitem__(self, i):
+            x, y = self.ds[i]
+            nonzeros = sum(np.sum(y.reshape(-1,2), 1) > 0)
+            # nonzeros = sum(y > 0) // 2
+            return (x, (y, np.ones(nonzeros), num_list_tst[i]))
+    
     class ConcatLblDataset2(Dataset):
         def __init__(self, ds, num):
             self.ds = ds
@@ -175,7 +187,13 @@ def start():
             return [flatten_conv(self.oconv1(x), self.k),
                     flatten_conv(self.oconv2(x), self.k)]
 
-    auxilary.auxilary.Tparticle[0] = heads_dict[prediction_head] * torch.eye(1, dtype=torch.int8)
+    if prediction_head == 'all':
+        auxilary.auxilary.Tparticle[0] = heads_dict['gen'] * torch.eye(1, dtype=torch.int8)    
+    elif prediction_head not in heads_dict:
+            print("Error: Prediction head undefined!")
+            exit(1)
+    else:
+        auxilary.auxilary.Tparticle[0] = heads_dict[prediction_head] * torch.eye(1, dtype=torch.int8)
 
     class SSD_Head(nn.Module):
         def __init__(self, k, bias, drop=0.3):
@@ -284,7 +302,7 @@ def start():
             range(target_tst_idxs_index, target_tst_idxs_index + lens_dict_tst[c1]))
         target_tst_idxs_index += len(uri_list_tst_dict[c1])
 
-    if training_type == "2b" or training_type == "4b" or training_type == "5b" or training_type == "4c" or training_type == "5c":
+    if prediction_head != 'all':
         fnames_dict = [target_uri_list_tst[i][:-4] for i in range(len(target_uri_list_tst))]
         centroids_dict = [target_centroids_list_tst[i][1:] for i in range(len(target_uri_list_tst))]
         df = pd.DataFrame({'fnames': fnames_dict, 'centroids': centroids_dict}, columns=['fnames', 'centroids'])
@@ -306,11 +324,7 @@ def start():
         learn.model.cuda()
 
         if load is not None:
-            learn.load('SSPicker_' + load_version + '_' + training_type + '_' + load)
-
-        if prediction_head not in heads_dict:
-            print("Error: Prediction head undefined!")
-            exit(1)
+            learn.load(load)
 
         iter0 = iter(md_target_datasets_shared_tst0.val_dl)
 
@@ -322,6 +336,88 @@ def start():
             for val_counter in range(len(val_idxs)):
                 learn.set_data(md_target_datasets_shared_tst0)
                 x0, y0 = next(iter0)
+                x0, y0 = add_border(x0, y0)
+                x0 = V(x0)
+                pred0 = learn.model(x0)
+
+                for b_clas, b_cent in zip(*pred0):
+                    b_cent = actn_to_cent_tst(b_cent, x0.shape[2:])
+                    b_cent = b_cent.data.cpu().numpy()
+                    b_cent[:, 0] = b_cent[:, 0] * x0.shape[2]
+                    b_cent[:, 1] = b_cent[:, 1] * x0.shape[3]
+                    # b_cent = np.asarray(np.round(b_cent), np.int32)
+                    clas_pr, clas_ids = b_clas.max(1)
+                    clas_pr = clas_pr.sigmoid().data.cpu().numpy()
+                    clas_ids = clas_ids.data.cpu().numpy()
+
+                    # predicted_centroids = ''
+                    # predicted_confs = ''
+                    predicted_star = 'data_\n\nloop_\n_rlnCoordinateX #1\n_rlnCoordinateY #2\n_rlnAutopickFigureOfMerit #3\n'
+                    for k in range(len(clas_pr[::-1])):
+                        if clas_ids[k] == 1 and clas_pr[k] > prediction_conf:
+                            # predicted_centroids = ','.join(
+                                # [predicted_centroids, str(b_cent[k][0]), str(b_cent[k][1])])
+                            # predicted_confs = ','.join([predicted_confs, str(clas_pr[k])])
+                            predicted_star = predicted_star +  str(b_cent[k][0]) + '\t' + str(b_cent[k][1]) + '\t' + str(clas_pr[k]) + '\n'
+                    # predicted_centroids = predicted_centroids[1:]
+                    # predicted_confs = predicted_confs[1:]
+
+                    if prediction_subfolder:
+                        # with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
+                        #     print(predicted_centroids, file=text_file)
+                        # with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
+                        #     print(predicted_confs, file=text_file)
+                        with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "w") as text_file:
+                            print(predicted_star, file=text_file)
+                    else:
+                        # pd.DataFrame(np_array).to_csv("path/to/file.csv")
+                        # with open("data/boxnet/predictions/"+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
+                        #     print(predicted_centroids, file=text_file)
+                        # with open("data/boxnet/predictions/"+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
+                        #     print(predicted_confs, file=text_file)
+                        with open("data/boxnet/predictions/"+fnames_dict[val_counter]+".star", "w") as text_file:
+                            print(predicted_star, file=text_file)
+
+                    # with open("data/boxnet/predictions/"+fnames_dict[val_counter]+".txt", 'r') as text_file:
+                    #     x = text_file.read().split(',')
+
+        print('prediction_time: ', time.time() - start_time)
+
+
+    else:
+        fnames_dict = [target_uri_list_tst[i][:-4] for i in range(len(target_uri_list_tst))]
+        centroids_dict = [target_centroids_list_tst[i][1:] for i in range(len(target_uri_list_tst))]
+        df = pd.DataFrame({'fnames': fnames_dict, 'centroids': centroids_dict}, columns=['fnames', 'centroids'])
+        df.to_csv(path3 + "centroids_" + str(len(target_datasets)) + ".csv", index=False)
+        val_idxs = target_tst_idxs
+        CENT_CSV_TARGET_DATASETS = Path(PATH2, source_list + "/centroids_" + str(len(target_datasets)) + ".csv")
+
+        md_target_datasets_sep_tst0 = ImageClassifierData.from_csv(path=PATH, folder=IMAGES,
+                                                                      csv_fname=CENT_CSV_TARGET_DATASETS,
+                                                                      val_idxs=val_idxs, tfms=tfms0, bs=1,
+                                                                      suffix='.tif', continuous=True,
+                                                                      num_workers=1)
+        val_ds2 = ConcatLblDataset_tst(md_target_datasets_sep_tst0.val_ds)
+        md_target_datasets_sep_tst0.val_dl.dataset = val_ds2
+
+        learn = ConvLearner(md_target_datasets_sep_tst0, models)
+        learn.model.cuda()
+
+        iter0 = iter(md_target_datasets_sep_tst0.val_dl)
+
+        if load is not None:
+            learn.load(load)       
+
+        learn.model.eval()
+        auxilary.auxilary.heads_eval_mode(learn.model[1])
+        start_time = time.time()
+        auxilary.auxilary.Tparticle[0] = heads_dict[target_datasets[0]] * torch.eye(1, dtype=torch.int8)
+
+        with torch.no_grad():
+            for val_counter in range(len(val_idxs)):
+                learn.set_data(md_target_datasets_sep_tst0)
+                x0, y0 = next(iter0)
+                auxilary.auxilary.Tparticle[0] = int(y0[2].cpu().numpy()[0]) * torch.eye(1, dtype=torch.int8)
                 x0, y0 = add_border(x0, y0)
                 x0 = V(x0)
                 pred0 = learn.model(x0)
@@ -366,10 +462,6 @@ def start():
                     #     x = text_file.read().split(',')
 
         print('prediction_time: ', time.time() - start_time)
-
-    else:
-        print("Error: Prediction model type not supported!")
-        exit(1)
 
 def main(argv=None):
     start()

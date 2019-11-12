@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-m", "evaluate", "-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+            "args": ["-m", "predict", "-t", "2b", "-td", "10078", "-l", "00893best", "-d", "hdd", "-psf", "test1", "-ph", "gen"]
         },
         {
             "name": "Predict",
@@ -18,7 +18,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+            "args": ["-t", "4b", "-td", "'10078$pdb_5xnl'", "-l", "SSPicker_29_6_4b_00945best", "-d", "hdd", "-psf", "test2", "-ph", "all"]
         },
         {
             "name": "Evaluate",
@@ -26,7 +26,8 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["-m", "both", "-t", "2b", "-td", "pdb_5xnl", "-l", "00893best", "-d", "hdd", "-psf", "test1"]
+            "args": ["-m", "score", "-t", "4b", "-td", "'10078$pdb_5xnl'", "-l", "SSPicker_29_6_4b_00945best", "-d", "hdd", "-psf", "test2", "-ef", "star"]
+            //"args": ["-m", "score", "-t", "2b", "-td", "'10077$10078$10081$pdb_6bqv$ss_1$pdb_6bhu$pdb_6bcx$pdb_6bcq$pdb_6bco$pdb_6az1$pdb_5y6p$pdb_5xwy$pdb_5w3s$pdb_5ngm$pdb_5mmi$pdb_5foj$pdb_4zor$pdb_3j9i$pdb_2gtl$pdb_1sa0$lf_1$hh_2$gk_1$10156$10153$10122$10097$10089$10084$10017$pdb_6b7n$pdb_6b44$pdb_5xnl$pdb_5w3l$pdb_5vy5$pdb_4hhb$pdb_2wri'", "-l", "00893best", "-d", "hdd", "-psf", "test2"]
         }
     ]
 }

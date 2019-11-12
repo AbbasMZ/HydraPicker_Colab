@@ -21,7 +21,6 @@ def start():
     # check to make sure you set the device
     # cuda_id = 0
     # torch.cuda.set_device(cuda_id)
-    version = '29_6'
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
     parser.add_argument('-m', '--mode', required=True, type=str, choices=['lrfind', 'train'], dest='mode')
@@ -34,7 +33,6 @@ def start():
     parser.add_argument('-g', '--gen_multiplier', type=float, default=0, dest='gen_multiplier')
     parser.add_argument('-s', '--save', type=str, default='0', dest='save')
     parser.add_argument('-l', '--load', type=str, default=None, dest='load')
-    parser.add_argument('-lv', '--load_version', type=str, default=version, dest='load_version')
     parser.add_argument('-cf', '--convert_from', type=str,
                         choices=['2b', '3b', '4b', '5b', '3c', '4c', '5c'], default=None, dest='convert_from')
     parser.add_argument('-lr', '--learning_rate', type=float, default=1e-3, dest='lr')
@@ -96,9 +94,6 @@ def start():
         parameters_text += "\nload: " + load
     else:
         parameters_text += "\nload: " + "None"
-
-    load_version = args.load_version
-    parameters_text += "\nload_version: " + load_version
 
     convert_from = args.convert_from
     if convert_from:
@@ -413,8 +408,6 @@ def start():
     ######### Making anchor boxes
     anc_grid = int(sz / 16)
     k = 1
-    n_clas = 2
-    n_act = k*(2+n_clas)
 
     anc_offset = 1/(anc_grid*2)
     anc_x = np.repeat(np.linspace(anc_offset, 1-anc_offset, anc_grid), anc_grid)
@@ -889,7 +882,7 @@ def start():
 
     if load is not None:
         if (convert_from is not None) and (convert_from != training_type):
-            learn.load('SSPicker_'+load_version+'_' + convert_from + '_' + load)
+            learn.load(load)
             if training_type == "3c" or training_type == "4c" or training_type == "5c":
                 learn.set_data(md_target_datasets_sep)
             elif training_type == "2b":
@@ -915,7 +908,7 @@ def start():
                 print('5b -> 5c')
                 exit(1)
         else:
-            learn.load('SSPicker_'+load_version+'_' + training_type + '_' + load)
+            learn.load(load)
         # learn.unfreeze()
         if heads_only:
             learn.freeze()
@@ -949,7 +942,7 @@ def start():
         elif training_type == "3b" or training_type == "4b" or training_type == "5b" or training_type == "3c" or training_type == "4c" or training_type == "5c":
                 learn.lr_find2(start_lr=lr/1000, end_lr=0.05, num_it=num_it, particle=True)
 
-        learn.save('SSPicker_'+version+'_' + training_type + '_' + save)
+        learn.save(save)
 
         learn.sched.plot(n_skip=1, n_skip_end=1)
         # learn.sched.plot(n_skip=10, n_skip_end=30)
@@ -968,23 +961,23 @@ def start():
             # phase1 = TrainingPhase(epochs=50, opt_fn=optim.Adam, lr=(lr,lr*0.03125), lr_decay=DecayType.EXPONENTIAL, momentum=0.98)
             phase1 = TrainingPhase(epochs=epochs, opt_fn=optim.Adam, lr=lr, momentum=0.98)
             learn.fit_opt_sched([phase1], particle=True,
-                                best_save_name='SSPicker_' + version + '_' + training_type + '_' + save + 'best',
-                                save_path="data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_')
+                                best_save_name=save + '_best',
+                                save_path="data/boxnet/curves/" + save + '_')
         elif optimizer_type == 'sgd':
             phase1 = TrainingPhase(epochs=epochs, opt_fn=optim.SGD, lr=(lr, lr * lr_decay),
                                    lr_decay=DecayType.EXPONENTIAL, momentum=0.98)
             learn.fit_opt_sched([phase1], particle=True,
-                                best_save_name='SSPicker_' + version + '_' + training_type + '_' + save + 'best',
-                                save_path="data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_')
+                                best_save_name=save + '_best',
+                                save_path="data/boxnet/curves/" + save + '_')
         elif optimizer_type == 'adam_sgdr':
             if check_pointing:
-                cycle_save_name = 'SSPicker_' + version + '_' + training_type + '_' + save
+                cycle_save_name = save
             else:
                 cycle_save_name = None
             learn.fit(lr, epochs, cycle_len=cycle_len, particle=True, use_wd_sched=uwds, wds=wd,
-                      best_save_name='SSPicker_' + version + '_' + training_type + '_' + save + 'best',
+                      best_save_name=save + '_best',
                       cycle_save_name=cycle_save_name,
-                      save_path="data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_')
+                      save_path="data/boxnet/curves/" + save + '_')
 
         # learn.metrics = [avg_distance, precision, recall]
         # learn.metrics = None
@@ -997,10 +990,10 @@ def start():
         if training_type == '5b' or training_type == '5c':
             set_weights_5()
 
-        learn.save('SSPicker_'+version+'_'+training_type+'_'+save)
+        learn.save(save)
         # learn.load('SSPicker_'+version+'_'+training_type+'_'+save+'best')
 
-        learn.sched.plot_loss(n_skip=0, n_skip_end=0, save_path="data/boxnet/curves/SSPicker_"+version+'_'+training_type+'_'+save+'_')
+        learn.sched.plot_loss(n_skip=0, n_skip_end=0, save_path="data/boxnet/curves/"+save+'_')
         # losses = np.load("losses.npy")
         # np.save("data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_' + "losses.npy", losses)
         # val_losses = np.load("val_losses.npy")

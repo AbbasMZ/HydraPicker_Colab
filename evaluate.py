@@ -20,19 +20,12 @@ def start():
     # check to make sure you set the device
     # cuda_id = 0
     # torch.cuda.set_device(cuda_id)
-    version = '29_6'
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
     parser.add_argument('-m', '--mode', default='score', type=str, choices=['score', 'image', 'both'], dest='mode')
-    parser.add_argument('-t', '--training_type', required=True, type=str,
-                        choices=['2b', '3b', '4b', '5b', '3c', '4c', '5c'], dest='training_type')
     parser.add_argument('-g', '--gen_multiplier', type=float, default=0, dest='gen_multiplier')
     parser.add_argument('-l', '--load', type=str, default=None, dest='load')
-    parser.add_argument('-lv', '--load_version', type=str, default=version, dest='load_version')
     parser.add_argument('-bs', '--batch_size', type=int, default=1, dest='bs')
-    # parser.add_argument('-sd', '--source_datasets',
-    #                     default='10077$10078$10081$pdb_6bqv$ss_1$pdb_6bhu$pdb_6bcx$pdb_6bcq$pdb_6bco$pdb_6az1$pdb_5y6p$pdb_5xwy$pdb_5w3s$pdb_5ngm$pdb_5mmi$pdb_5foj$pdb_4zor$pdb_3j9i$pdb_2gtl$pdb_1sa0$lf_1$hh_2$gk_1$10156$10153$10122$10097$10089$10084$10017',
-    #                     type=str, dest='source_dataset')
     parser.add_argument('-td', '--target_datasets',
                         default='pdb_6b7n$pdb_6b44$pdb_5xnl$pdb_5w3l$pdb_5vy5$pdb_4hhb$pdb_2wri', type=str,
                         dest='target_dataset')
@@ -57,9 +50,7 @@ def start():
         draw = 1
     else:
         draw = 0
-    training_type = args.training_type
     load = args.load
-    load_version = args.load_version
     source_image = args.source_image
     source_list = args.source_list
     bs = args.bs
@@ -672,7 +663,7 @@ def start():
 
             return x_padded, y
         return x, y
-        
+
     ######## Augmentations
     tfms0 = tfms_from_model(f_model, sz, crop_type=CropType.IDENTITY, tfm_y=TfmType.COORD_CENTERS, pad_mode=cv2.BORDER_REFLECT_101)
 
@@ -721,7 +712,7 @@ def start():
     learn.model.cuda()
     
     if load is not None:
-        learn.load('SSPicker_'+load_version+'_' + training_type + '_' + load)
+        learn.load(load)
         # learn.unfreeze()
 
     if prediction_head not in heads_dict:
@@ -737,7 +728,6 @@ def start():
 
     with torch.no_grad():
         for val_counter in range(len(val_idxs)):
-
 
             if evaluate_format == "star_cryolo":
                 learn.set_data(md_target_datasets_shared_tst0)
@@ -853,8 +843,8 @@ def start():
                         predicted_confs.append(float(line_content[2]))
                         input_line = text_file.readline()
                     predicted_centroids = np.array(predicted_centroids, dtype=np.float32).reshape(1, -1, 2)
-                    predicted_centroids[0, :, 0] = predicted_centroids[0, :, 0] / x0.shape[3]
-                    predicted_centroids[0, :, 1] = predicted_centroids[0, :, 1] / x0.shape[2]
+                    predicted_centroids[0, :, 0] = predicted_centroids[0, :, 0] / x0.shape[2]
+                    predicted_centroids[0, :, 1] = predicted_centroids[0, :, 1] / x0.shape[3]
                     # predicted_centroids[0, :, [0, 1]] = predicted_centroids[0, :, [1, 0]]
                     predicted_centroids = T(predicted_centroids)
                     predicted_confs = np.array(predicted_confs, dtype=np.float32).reshape(1, -1)
