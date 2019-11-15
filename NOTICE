@@ -1,0 +1,3 @@
+This work uses both changed and unchanged parts of the fastai source code.
+Multiple functionalities of fastai code is changed in many of its files.
+Only more relevant parts of fastai code to this project are remained.

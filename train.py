@@ -23,7 +23,7 @@ def start():
     # torch.cuda.set_device(cuda_id)
 
     parser = argparse.ArgumentParser(description='A cross dataset generalization study using 37 Cryo-EM datasets.')
-    parser.add_argument('-m', '--mode', required=True, type=str, choices=['lrfind', 'train'], dest='mode')
+    parser.add_argument('-m', '--mode', default='train', type=str, choices=['lrfind', 'train'], dest='mode')
     parser.add_argument('-t', '--training_type', required=True, type=str,
                         choices=['2b', '3b', '4b', '5b', '3c', '4c', '5c'], dest='training_type')
     parser.add_argument('-o', '--optimizer_type', default='adam_sgdr', type=str,
@@ -40,7 +40,7 @@ def start():
     parser.add_argument('-uwds', '--use_weight_decay_scheduler', type=bool, default=False, dest='uwds')
     parser.add_argument('-lr0', '--learning_rate_0', type=float, default=None, dest='lr0')
     parser.add_argument('-lrd', '--learning_rate_decay', type=float, default=1e-3, dest='lr_decay')
-    parser.add_argument('-bs', '--batch_size', type=int, default=4, dest='bs')
+    parser.add_argument('-bs', '--batch_size', type=int, default=1, dest='bs')
     parser.add_argument('-sd', '--source_datasets',
                         default='10077$10078$10081$pdb_6bqv$ss_1$pdb_6bhu$pdb_6bcx$pdb_6bcq$pdb_6bco$pdb_6az1$pdb_5y6p$pdb_5xwy$pdb_5w3s$pdb_5ngm$pdb_5mmi$pdb_5foj$pdb_4zor$pdb_3j9i$pdb_2gtl$pdb_1sa0$lf_1$hh_2$gk_1$10156$10153$10122$10097$10089$10084$10017',
                         type=str, dest='source_dataset')
@@ -49,9 +49,8 @@ def start():
                         dest='target_dataset')
     parser.add_argument('-cs', '--crop_size', type=int, default=368, dest='crop_size')  # up to 240 for original images
     parser.add_argument('-ps', '--particle_size', type=int, default=1, dest='particle_size')
-    parser.add_argument('-si', '--source_image', type=str, default='trainingdata11_2', dest='source_image')
-    parser.add_argument('-sl', '--source_list', type=str, default='labels12_2', dest='source_list')
-    parser.add_argument('-d', '--drive', default='ssd', type=str, choices=['ssd', 'hdd'], dest='drive')
+    parser.add_argument('-si', '--source_image', type=str, default='micrographs', dest='source_image')
+    parser.add_argument('-sl', '--source_list', type=str, default='labels', dest='source_list')
     parser.add_argument('-ioutrn', '--IOU_training', type=float, default=0.6, dest='iou_trn')
     parser.add_argument('-ioutst', '--IOU_testing', type=float, default=0.6, dest='iou_tst')
     parser.add_argument('-sn', '--serial_number', default='00000', type=str, dest='serial_number')
@@ -164,7 +163,7 @@ def start():
     parameters_text += "\nunbiased_training: " + str(unbiased_training)
 
     heads_only = args.heads_only
-    # auxilary.auxilary.heads_training_only[0] = heads_only * torch.eye(1, dtype=torch.int8)
+    # aux.aux.heads_training_only[0] = heads_only * torch.eye(1, dtype=torch.int8)
     parameters_text += "\nheads_training_only: " + str(heads_only)
 
     check_pointing = args.check_pointing
@@ -189,29 +188,21 @@ def start():
     parameters_text += "\nTrain_fine_tune_head: " + str(train_fine_tune_head)
 
     if training_type == '3c' or training_type == '4c' or training_type == '5c':
-        # auxilary.auxilary.fine_tune[0] = 1 * torch.eye(1, dtype=torch.int8)
-        auxilary.auxilary.fine_tune[0] = len(target_datasets) * torch.eye(1, dtype=torch.int8)
+        # aux.aux.fine_tune[0] = 1 * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune[0] = len(target_datasets) * torch.eye(1, dtype=torch.int8)
         for i in range(1, len(target_datasets) + 1):
-            auxilary.auxilary.fine_tune[i] = heads_dict[target_datasets[i - 1]] * torch.eye(1, dtype=torch.int8)
-        auxilary.auxilary.fine_tune_wgen[0] = train_gen_head * torch.eye(1, dtype=torch.int8)
-        auxilary.auxilary.fine_tune_wgen[1] = heads_dict["gen"] * torch.eye(1, dtype=torch.int8)
-        auxilary.auxilary.fine_tune_wfine[0] = train_fine_tune_head * torch.eye(1, dtype=torch.int8)
-        auxilary.auxilary.fine_tune_wfine[1] = heads_dict["fine_tuned"] * torch.eye(1, dtype=torch.int8)
+            aux.aux.fine_tune[i] = heads_dict[target_datasets[i - 1]] * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune_wgen[0] = train_gen_head * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune_wgen[1] = heads_dict["gen"] * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune_wfine[0] = train_fine_tune_head * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune_wfine[1] = heads_dict["fine_tuned"] * torch.eye(1, dtype=torch.int8)
     else:
-        auxilary.auxilary.fine_tune[0] = 0 * torch.eye(1, dtype=torch.int8)
+        aux.aux.fine_tune[0] = 0 * torch.eye(1, dtype=torch.int8)
 
     ############ Useful paths
-    drive = args.drive
-    parameters_text += "\ndrive: " + str(drive)
-    if drive == 'ssd':
-        path2 = "/local/ssd/abbasmz/boxnet/" + source_image + "/"
-        PATH = Path("/local/ssd/abbasmz/boxnet")
-    else:
-        path2 = "data/boxnet/" + source_image + "/"
-        PATH = Path("data/boxnet")
-    PATH2 = Path("data/boxnet")
-    path3 = "data/boxnet/" + source_list + "/"
-    path4 = "data/boxnet/results/"
+    PATH = Path("data")
+    PATH2 = Path("data")
+    path3 = "data/" + source_list + "/"
     IMAGES = source_image
 
 
@@ -283,7 +274,6 @@ def start():
         def __getitem__(self, i):
             x, y = self.ds[i]
             nonzeros = sum(np.sum(y.reshape(-1,2), 1) > 0)
-            # nonzeros = sum(y > 0) // 2
             return (x, (y, np.ones(nonzeros), num_list_trn[i]))
 
 
@@ -297,7 +287,6 @@ def start():
         def __getitem__(self, i):
             x, y = self.ds[i]
             nonzeros = sum(np.sum(y.reshape(-1,2), 1) > 0)
-            # nonzeros = sum(y > 0) // 2
             return (x, (y, np.ones(nonzeros), num_list_val[i]))
 
     class ConcatLblDataset2(Dataset):
@@ -311,16 +300,13 @@ def start():
         def __getitem__(self, i):
             x, y = self.ds[i]
             nonzeros = sum(np.sum(y.reshape(-1, 2), 1) > 0)
-            # nonzeros = sum(y > 0) // 2
             return (x, (y, np.ones(nonzeros), self.num))
 
     ######## Augmentations
     aug_tfms = [RandomRotate(180, mode=cv2.BORDER_REFLECT_101, tfm_y=TfmType.COORD_CENTERS),
                 RandomFlip(tfm_y=TfmType.COORD_CENTERS)]
-    # aug_tfms = [RandomRotate(180, mode=cv2.BORDER_REFLECT_101, tfm_y=TfmType.COORD_CENTERS)]
     tfms = tfms_from_model(f_model, sz, crop_type=CropType.LTDCENTER, tfm_y=TfmType.COORD_CENTERS, aug_tfms=aug_tfms,
                            pad_mode=cv2.BORDER_REFLECT_101)
-    # tfms = tfms_from_model(f_model, sz, crop_type=CropType.NEARCENTER, tfm_y=TfmType.COORD_CENTERS, aug_tfms=aug_tfms, pad_mode=cv2.BORDER_REFLECT_101)
 
     source_uri_list = []
     source_centroids_list = []
@@ -424,8 +410,6 @@ def start():
     def hw2corners(ctr, hw): return torch.cat([ctr-hw/2, ctr+hw/2], dim=1)
     anchor_cnr = hw2corners(anchors[:,:2], anchors[:,2:])
 
-    # anchor_cnr
-
     class GroupNorm(nn.Module):
         def __init__(self, num_features, num_groups=32, eps=1e-5):
             super(GroupNorm, self).__init__()
@@ -451,12 +435,9 @@ def start():
         def __init__(self, nin, nout, stride=2, drop=0.1):
             super().__init__()
             self.conv = nn.Conv2d(nin, nout, 3, stride=stride, padding=1)
-    #         self.bn = nn.BatchNorm2d(nout)
             self.gn = GroupNorm(nout)
             self.drop = nn.Dropout(drop)
 
-    #     def forward(self, x): return self.drop(F.relu(self.conv(x)))
-    #     def forward(self, x): return self.drop(self.bn(F.relu(self.conv(x))))
         def forward(self, x): return self.drop(F.relu(self.gn(self.conv(x))))
 
     def flatten_conv(x, k):
@@ -487,7 +468,7 @@ def start():
 
         def forward(self, pred, targ):
             t = one_hot_embedding(targ.type(torch.LongTensor), self.num_classes + 1)
-            t = V(t[:, 1:].contiguous())  # .cpu()
+            t = V(t[:, 1:].contiguous())
             x = pred[:, 1:]
             w = self.get_weight(x, t)
             # **local
@@ -495,8 +476,6 @@ def start():
             # return F.binary_cross_entropy_with_logits(x, t, reduction='sum') / self.num_classes
 
         def get_weight(self, x, t): return None
-
-    # loss_f = BCE_Loss(1)
 
     class FocalLoss(BCE_Loss):
         def get_weight(self,x,t):
@@ -508,13 +487,13 @@ def start():
 
     loss_f = FocalLoss(1)
 
-    auxilary.auxilary.Tparticle[0] = target_head*torch.eye(1, dtype=torch.int8)
+    aux.aux.Tparticle[0] = target_head*torch.eye(1, dtype=torch.int8)
 
     class SSD_Head(nn.Module):
         def __init__(self, k, bias, drop=0.3):
             super().__init__()
 
-            self.aux = auxilary.auxilary()
+            self.aux = aux.aux()
 
             self.drop = []
             self.sconv0 = []
@@ -568,18 +547,12 @@ def start():
     def get_y(cent):
         """ gets rid of any of the bounding boxes that are just padding """
         cent = cent.float().view(-1,2)/sz
-        # cent_keep = ((cent[:,0]+cent[:,1])>0).nonzero()[:,0]
-        # resulting_cents = cent[cent_keep]
         resulting_cents = cent[(cent[:, 0] > 0) | (cent[:, 1] > 0)]
-    #     return cent[cent_keep], clas[clas > 0]
         return resulting_cents, V(torch.ones(len(resulting_cents)))
 
     def actn_to_cent(actn, anc_ctrs):
         """ activations to centroids """
         actn_cents = torch.tanh(actn)
-        # actn_bbs = torch.tanh(actn)
-        # actn_centers = (actn_bbs[:, :2] / 2 * grid_sizes) + anchors[:, :2]
-        # actn_hw = (actn_bbs[:, 2:] / 2 + 1) * anchors[:, 2:]
         return (actn_cents * 0.75 * grid_sizes) + anc_ctrs
 
     def map_to_ground_truth(overlaps):
@@ -602,17 +575,14 @@ def start():
         return bb.cuda()
 
     def ssd_1_loss(b_clas,b_cent,cent,clas):
-        # cent,clas = get_y(cent,clas)
         cent, clas = get_y(cent)
-        # a_ic = actn_to_bb(b_bb, anchors)
         b_cent = actn_to_cent(b_cent, anc_ctrs)
-        bbox = cent2bb(cent.data)#.cpu())
-        overlaps = jaccard(bbox, anchor_cnr.data)#.cpu())
+        bbox = cent2bb(cent.data)
+        overlaps = jaccard(bbox, anchor_cnr.data)
         gt_overlap,gt_idx = map_to_ground_truth(overlaps)
         gt_clas = clas[gt_idx]
         pos = gt_overlap > iou_trn
         pos_idx = torch.nonzero(pos)[:,0]
-    #     gt_clas[1-pos] = 20
         gt_clas[1 - pos] = 0
         gt_cent = cent[gt_idx]
         loc_loss = ((b_cent[pos_idx] - gt_cent[pos_idx]).abs()).mean()
@@ -620,7 +590,6 @@ def start():
         return loc_loss, clas_loss
 
     pdist = nn.PairwiseDistance(p=2, eps=1e-9)
-    # def pdist(x1, x2): return torch.sqrt((torch.abs(x1 - x2) * torch.abs(x1 - x2)).sum())
 
     def lbias4(training_type, regularizer):
         if training_type == '4c':
@@ -705,10 +674,7 @@ def start():
         return loss
 
     def ssd_loss(pred,targ):
-        # global unbiased_training
         nonlocal unbiased_training
-        # global counter
-        # counter += 1
         lcs,lls = 0.,0.
         for b_clas,b_cent,cent,clas,dsnum in zip(*pred,*targ):
             # print('dsnum: ', dsnum)
@@ -766,7 +732,6 @@ def start():
                 rsetattr(modules1, "out" + str(heads_dict[c1]) + ".oconv2.weight.data", dc(rgetattr(modules1, "out" + str(copy_source) + ".oconv2.weight.data")))
                 rsetattr(modules1, "out" + str(heads_dict[c1]) + ".oconv2.bias.data", dc(rgetattr(modules1, "out" + str(copy_source) + ".oconv2.bias.data")))
         learn.model.zero_grad()
-    # copy_weights_2bto3b4b5b_or_4bto4c_or_5bto5c()
 
     def copy_weights_3bto4b_or_3bto3c():
         datasets = source_datasets
@@ -823,7 +788,6 @@ def start():
                 rsetattr(modules1, "out" + str(heads_dict[c1]) + ".oconv2.weight.data", oconv2_weight)
                 rsetattr(modules1, "out" + str(heads_dict[c1]) + ".oconv2.bias.data", oconv2_bias)
         learn.model.zero_grad()
-    # copy_weights_3bto4b_or_3bto3c()
 
     def set_weights_5():
         if training_type == '5c':
@@ -878,7 +842,6 @@ def start():
             rsetattr(modules, "out" + str(heads_dict["gen"]) + ".oconv1.bias.data", oconv1_bias)
             rsetattr(modules, "out" + str(heads_dict["gen"]) + ".oconv2.weight.data", oconv2_weight)
             rsetattr(modules, "out" + str(heads_dict["gen"]) + ".oconv2.bias.data", oconv2_bias)
-    # set_weights_5()
 
     if load is not None:
         if (convert_from is not None) and (convert_from != training_type):
@@ -909,7 +872,6 @@ def start():
                 exit(1)
         else:
             learn.load(load)
-        # learn.unfreeze()
         if heads_only:
             learn.freeze()
             if training_type == '4c' and train_gen_head == 0:
@@ -923,13 +885,6 @@ def start():
     if mode == 'lrfind':
 
         lr = 5e-4
-        # learn.metrics = [precision]
-
-        # lrs = np.array([lr/100,lr/10,lr])
-        # learn.lr_find(lrs/1000,1.)
-        # learn.metrics = [precision]
-
-        # learn.lr_find(start_lr=lr/1000, end_lr=0.05)
         if training_type == "3c" or training_type == "4c" or training_type == "5c":
             counts = (len(target_uri_list) - len(target_val_idxs))
             num_it = int(np.ceil(200.0 / counts)) * counts - 1
@@ -945,7 +900,6 @@ def start():
         learn.save(save)
 
         learn.sched.plot(n_skip=1, n_skip_end=1)
-        # learn.sched.plot(n_skip=10, n_skip_end=30)
 
         redo = input('Plot again [y/n] ? ')
         while redo == 'y':
@@ -958,7 +912,6 @@ def start():
 
         write_txt("data/boxnet/params/" + serial_number + ".txt", parameters_text)
         if optimizer_type == 'adam':
-            # phase1 = TrainingPhase(epochs=50, opt_fn=optim.Adam, lr=(lr,lr*0.03125), lr_decay=DecayType.EXPONENTIAL, momentum=0.98)
             phase1 = TrainingPhase(epochs=epochs, opt_fn=optim.Adam, lr=lr, momentum=0.98)
             learn.fit_opt_sched([phase1], particle=True,
                                 best_save_name=save + '_best',
@@ -979,25 +932,11 @@ def start():
                       cycle_save_name=cycle_save_name,
                       save_path="data/boxnet/curves/" + save + '_')
 
-        # learn.metrics = [avg_distance, precision, recall]
-        # learn.metrics = None
-        # learn.fit(lr, 1, cycle_len=1, particle=True)
-
-        # phase1 = TrainingPhase(epochs=4, opt_fn=optim.SGD, lr=lr, lr_decay=DecayType.NO, momentum=0.98)
-        # learn.fit_opt_sched([phase1], particle=True, best_save_name='SSPicker_'+version+'_'+training_type+'_6best')
-        # learn.fit_opt_sched([phase1,phase2], particle=True, best_save_name='SSPicker_'+version+'_'+training_type+'_10best', cycle_save_name='SSPicker_'+version+'_4b_10')
-
         if training_type == '5b' or training_type == '5c':
             set_weights_5()
 
         learn.save(save)
-        # learn.load('SSPicker_'+version+'_'+training_type+'_'+save+'best')
-
         learn.sched.plot_loss(n_skip=0, n_skip_end=0, save_path="data/boxnet/curves/"+save+'_')
-        # losses = np.load("losses.npy")
-        # np.save("data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_' + "losses.npy", losses)
-        # val_losses = np.load("val_losses.npy")
-        # np.save("data/boxnet/curves/SSPicker_" + version + '_' + training_type + '_' + save + '_' + "val_losses.npy", val_losses)
 
 def main(argv=None):
     start()

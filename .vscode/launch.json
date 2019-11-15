@@ -13,6 +13,14 @@
             "args": ["-m", "predict", "-t", "2b", "-td", "10078", "-l", "00893best", "-d", "hdd", "-psf", "test1", "-ph", "gen"]
         },
         {
+            "name": "Train",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["-m", "train", "-t", "2b", "-td", "'10078$pdb_5xnl'", "-d", "hdd"]
+        },
+        {
             "name": "Predict",
             "type": "python",
             "request": "launch",
