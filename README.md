@@ -35,10 +35,9 @@ Download the generalized model and move it to the installation directory in `dat
 
 To make sure the setup is working correctly, try using the model to pick from a sample dataset 'Empiar 10078':
 
-`CUDA_VISIBLE_DEVICES=0 python predict.py `
--td 10078 -l SSPicker_29_6_4b_00945best -psf test
+`CUDA_VISIBLE_DEVICES=0 python predict.py -td 10078 -l SSPicker_29_6_4b_00945best -psf test`
 
-Asuming no error would occur three .star files should be created under `predictions/test` 
+Asuming no error would occur three .star files should be created in `predictions/test`.
 
 ## Usage
 
