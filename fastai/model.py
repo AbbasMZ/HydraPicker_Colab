@@ -4,7 +4,7 @@ from .core import *
 from .layer_optimizer import *
 from .swa import *
 from .fp16 import *
-from fastai import auxilary
+from fastai import aux
 IS_TORCH_04 = LooseVersion(torch.__version__) >= LooseVersion('0.4')
 
 def cut_model(m, cut):
