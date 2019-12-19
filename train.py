@@ -910,18 +910,18 @@ def start():
 
     elif mode == 'train':
 
-        write_txt("data/boxnet/params/" + serial_number + ".txt", parameters_text)
+        write_txt("data/params/" + serial_number + ".txt", parameters_text)
         if optimizer_type == 'adam':
             phase1 = TrainingPhase(epochs=epochs, opt_fn=optim.Adam, lr=lr, momentum=0.98)
             learn.fit_opt_sched([phase1], particle=True,
                                 best_save_name=save + '_best',
-                                save_path="data/boxnet/curves/" + save + '_')
+                                save_path="data/curves/" + save + '_')
         elif optimizer_type == 'sgd':
             phase1 = TrainingPhase(epochs=epochs, opt_fn=optim.SGD, lr=(lr, lr * lr_decay),
                                    lr_decay=DecayType.EXPONENTIAL, momentum=0.98)
             learn.fit_opt_sched([phase1], particle=True,
                                 best_save_name=save + '_best',
-                                save_path="data/boxnet/curves/" + save + '_')
+                                save_path="data/curves/" + save + '_')
         elif optimizer_type == 'adam_sgdr':
             if check_pointing:
                 cycle_save_name = save
@@ -930,13 +930,13 @@ def start():
             learn.fit(lr, epochs, cycle_len=cycle_len, particle=True, use_wd_sched=uwds, wds=wd,
                       best_save_name=save + '_best',
                       cycle_save_name=cycle_save_name,
-                      save_path="data/boxnet/curves/" + save + '_')
+                      save_path="data/curves/" + save + '_')
 
         if training_type == '5b' or training_type == '5c':
             set_weights_5()
 
         learn.save(save)
-        learn.sched.plot_loss(n_skip=0, n_skip_end=0, save_path="data/boxnet/curves/"+save+'_')
+        learn.sched.plot_loss(n_skip=0, n_skip_end=0, save_path="data/curves/"+save+'_')
 
 def main(argv=None):
     start()

@@ -321,10 +321,10 @@ def start():
                             predicted_star = predicted_star +  str(b_cent[k][0]) + '\t' + str(b_cent[k][1]) + '\t' + str(clas_pr[k]) + '\n'
 
                     if prediction_subfolder:
-                        with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "w") as text_file:
+                        with open("data/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "w") as text_file:
                             print(predicted_star, file=text_file)
                     else:
-                        with open("data/boxnet/predictions/"+fnames_dict[val_counter]+".star", "w") as text_file:
+                        with open("data/predictions/"+fnames_dict[val_counter]+".star", "w") as text_file:
                             print(predicted_star, file=text_file)
         
         print('prediction_time: ', time.time() - start_time)
@@ -390,16 +390,16 @@ def start():
                     predicted_confs = predicted_confs[1:]
 
                     if prediction_subfolder:
-                        with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
+                        with open("data/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
                             print(predicted_centroids, file=text_file)
-                        with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
+                        with open("data/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
                             print(predicted_confs, file=text_file)
-                        with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "w") as text_file:
+                        with open("data/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "w") as text_file:
                             print(predicted_star, file=text_file)
                     else:
-                        with open("data/boxnet/predictions/"+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
+                        with open("data/predictions/"+fnames_dict[val_counter]+"_coords.txt", "w") as text_file:
                             print(predicted_centroids, file=text_file)
-                        with open("data/boxnet/predictions/"+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
+                        with open("data/predictions/"+fnames_dict[val_counter]+"_confs.txt", "w") as text_file:
                             print(predicted_confs, file=text_file)
 
         print('prediction_time: ', time.time() - start_time)

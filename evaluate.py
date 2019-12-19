@@ -629,8 +629,8 @@ def start():
                 y0[0] = y0[0].float()
                 y0 = V(y0)
 
-                with open("data/boxnet/predictions/out_" + cryolo_model + '/STAR/' + fnames_dict[val_counter] + ".star", "r") as text_file:
-                # with open("data/boxnet/predictions/" + fnames_dict[val_counter] + "_BoxNet2Mask_20180918.star", "r") as text_file:
+                with open("data/predictions/out_" + cryolo_model + '/STAR/' + fnames_dict[val_counter] + ".star", "r") as text_file:
+                # with open("data/predictions/" + fnames_dict[val_counter] + "_BoxNet2Mask_20180918.star", "r") as text_file:
                     for i in range(10):
                         input_line = text_file.readline()
                     predicted_centroids = []
@@ -676,10 +676,10 @@ def start():
                 y0[0] = y0[0].float()
                 y0 = V(y0)
 
-                # with open("data/boxnet/predictions/" + fnames_dict[val_counter] + "_BoxNet2_20180602.star", "r") as text_file:
-                # with open("data/boxnet/predictions/" + fnames_dict[val_counter] + "_BoxNet2Mask_20180918.star", "r") as text_file:
-                # with open("data/boxnet/predictions/" + fnames_dict[val_counter] + "_BoxNet_blank_trn4.star", "r") as text_file:
-                with open("data/boxnet/predictions/" + fnames_dict[val_counter] + boxnet_suffix, "r") as text_file:
+                # with open("data/predictions/" + fnames_dict[val_counter] + "_BoxNet2_20180602.star", "r") as text_file:
+                # with open("data/predictions/" + fnames_dict[val_counter] + "_BoxNet2Mask_20180918.star", "r") as text_file:
+                # with open("data/predictions/" + fnames_dict[val_counter] + "_BoxNet_blank_trn4.star", "r") as text_file:
+                with open("data/predictions/" + fnames_dict[val_counter] + boxnet_suffix, "r") as text_file:
                     for i in range(12):
                         input_line = text_file.readline()
                     predicted_centroids = []
@@ -713,7 +713,7 @@ def start():
                 y0[0] = y0[0].float()
                 y0 = V(y0)
 
-                with open("data/boxnet/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "r") as text_file:
+                with open("data/predictions/"+prediction_subfolder+'/'+fnames_dict[val_counter]+".star", "r") as text_file:
                     for i in range(7):
                         input_line = text_file.readline()
                     predicted_centroids = []
