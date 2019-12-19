@@ -43,13 +43,13 @@ class Stepper():
         if train:
             apply_leaf(self.m, set_train_mode)
             try:
-                auxilary.auxilary.heads_train_mode(self.m[1])
+                aux.aux.heads_train_mode(self.m[1])
             except:
                 pass
         else:
             self.m.eval()
             try:
-                auxilary.auxilary.heads_eval_mode(self.m[1])
+                aux.aux.heads_eval_mode(self.m[1])
             except:
                 pass
         if hasattr(self.m, 'reset'):
@@ -88,23 +88,23 @@ def set_train_mode(m):
               or not getattr(m,'trainable',False))):
         m.eval()
         try:
-            auxilary.auxilary.heads_eval_mode(m[1])
+            aux.aux.heads_eval_mode(m[1])
         except:
             pass
     elif (getattr(m,'drop_freeze',False) and hasattr(m, 'p')
           and ('drop' in type(m).__name__.lower())):
         m.eval()
         try:
-            auxilary.auxilary.heads_eval_mode(m[1])
+            aux.aux.heads_eval_mode(m[1])
         except:
             pass
 
     else:
-        # if auxilary.auxilary.heads_training_only[0] == 0:
+        # if aux.aux.heads_training_only[0] == 0:
         #     m.train()
         m.train()
         try:
-            auxilary.auxilary.heads_train_mode(m[1])
+            aux.aux.heads_train_mode(m[1])
         except:
             pass
 
@@ -164,8 +164,8 @@ def fit(model, data, n_epochs, opt, crit, metrics=None, callbacks=None, stepper=
         for (*x,y) in t:
 
             if particle_flag == True:
-                # auxilary.auxilary.particle = [y[2][0]]
-                auxilary.auxilary.Tparticle[0] = int(y[2][0]) * torch.eye(1, dtype=torch.int8)
+                # aux.aux.particle = [y[2][0]]
+                aux.aux.Tparticle[0] = int(y[2][0]) * torch.eye(1, dtype=torch.int8)
                 # particle[0] = y[2][0]
 
             batch_num += 1
@@ -258,8 +258,8 @@ def validate(stepper, dl, metrics, particle=None):
             if particle != None:
                 if particle == True:
                     # particle[0] = y[2][0]
-                    # auxilary.auxilary.particle = [y[2][0]]
-                    auxilary.auxilary.Tparticle[0] = int(y[2][0]) * torch.eye(1, dtype=torch.int8)
+                    # aux.aux.particle = [y[2][0]]
+                    aux.aux.Tparticle[0] = int(y[2][0]) * torch.eye(1, dtype=torch.int8)
 
             preds, l = stepper.evaluate(VV(x), VV(y))
             if isinstance(x,list): batch_cnts.append(len(x[0]))
