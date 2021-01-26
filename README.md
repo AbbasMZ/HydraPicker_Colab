@@ -20,7 +20,7 @@ Make sure you have a few Gigs of free space on your Google Drive.
 
 Also, download this pre-trained model and upload it to your Google Drive under `Colab Notebooks\HydraPicker_Colab\data\models`.
 
-[Link to the model (Size is about 1 GB.)](https://www.dropbox.com/sh/eqa3oh0gprdl518/AADyZl0zPjCsqJyYwMf09Jq1a?dl=0)
+[Link to the model (Size is about 1 GB.)](https://drive.google.com/file/d/1XiYBNX_MVax4xgFBMcfTCHz_zwucBQb0/view?usp=sharing)
 
 Then, follow the instructions in `Colab Notebooks\HydraPicker_Colab\colab_sample_run.ipynb` to test that everything is working.
 
